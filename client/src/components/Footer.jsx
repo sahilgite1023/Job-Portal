@@ -14,7 +14,7 @@ export default function Footer(){
           <div className="d-flex align-items-center gap-2">
             <span className="small fw-semibold">Anushka:</span>
             <a className="text-reset" href="https://github.com/anushkashinde7188" target="_blank" rel="noopener noreferrer" aria-label="Anushka GitHub"><i className="bi bi-github"></i></a>
-            {/* LinkedIn not provided for Anushka */}
+            <a className="text-reset" href="https://www.linkedin.com/in/anushkashinde15" target="_blank" rel="noopener noreferrer" aria-label="Anushkashinde LinkedIn"><i className="bi bi-linkedin"></i></a>
           </div>
         </div>
         <div className="small">© {new Date().getFullYear()} JobPortal</div>
