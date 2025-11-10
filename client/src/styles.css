@@ -1,0 +1,133 @@
+:root {
+  --brand: #6f42c1; /* purple */
+  --brand-2: #0d6efd; /* bootstrap primary */
+  --bg-soft: #f8f9fc;
+}
+
+body {
+  background: var(--bg-soft);
+}
+
+@media (max-width: 576px) {
+  .hero { padding: 2.2rem 1.4rem; }
+  h1.display-5, h1.display-6 { font-size: 1.85rem; }
+  .navbar .navbar-brand { font-size: 1.15rem; }
+  .card-body { padding: 0.9rem 0.95rem; }
+}
+
+.hero {
+  background: radial-gradient(1000px 600px at 0% 0%, rgba(13,110,253,0.12), transparent 40%),
+              radial-gradient(1000px 600px at 100% 0%, rgba(111,66,193,0.12), transparent 40%),
+              linear-gradient(180deg, #ffffff, #f8f9fc 70%);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+.card-hover {
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+}
+
+input.is-valid, textarea.is-valid, select.is-valid { border-color: #198754 !important; }
+input.is-invalid, textarea.is-invalid, select.is-invalid { border-color: #dc3545 !important; }
+input.is-invalid:focus, textarea.is-invalid:focus, select.is-invalid:focus { box-shadow: 0 0 0 .25rem rgba(220,53,69,.25); }
+
+.badge-soft {
+  background: rgba(13,110,253,.1);
+  color: #0d6efd;
+  border: 1px solid rgba(13,110,253,.2);
+}
+
+.kpi-card {
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.table thead th {
+  background: #f3f4f7;
+}
+
+.navbar-brand span.brand-dot {
+  color: var(--brand);
+}
+
+/* Dark theme overrides */
+[data-bs-theme="dark"] body {
+  background: #121619;
+}
+[data-bs-theme="dark"] .hero {
+  background: radial-gradient(1000px 600px at 0% 0%, rgba(13,110,253,0.18), transparent 45%),
+              radial-gradient(1000px 600px at 100% 0%, rgba(111,66,193,0.18), transparent 45%),
+              linear-gradient(180deg, #1e2429, #13181c 70%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+[data-bs-theme="dark"] .bg-white {
+  background-color: #1e2429 !important;
+}
+[data-bs-theme="dark"] .input-group-text.bg-white {
+  background-color: #1e2429 !important;
+  color: #cfd6dc !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .kpi-card {
+  background-color: #1e2429;
+  border-color: rgba(255,255,255,0.08);
+}
+[data-bs-theme="dark"] .card-hover:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8) !important;
+}
+[data-bs-theme="dark"] .table thead th {
+  background: #262e34;
+  color: #cfd6dc;
+}
+[data-bs-theme="dark"] .navbar {
+  background-color: #1e2429 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+[data-bs-theme="dark"] .navbar .nav-link,
+[data-bs-theme="dark"] .navbar-brand {
+  color: #e4e8eb !important;
+}
+[data-bs-theme="dark"] .navbar .nav-link.active {
+  color: #ffffff !important;
+}
+[data-bs-theme="dark"] .badge.bg-info-subtle.text-info-emphasis {
+  background-color: rgba(13,110,253,0.18) !important;
+  color: #74b2ff !important;
+  border: 1px solid rgba(13,110,253,0.3);
+}
+[data-bs-theme="dark"] .badge.bg-secondary-subtle.text-secondary-emphasis {
+  background-color: rgba(108,117,125,0.25) !important;
+  color: #d0d4d7 !important;
+  border: 1px solid rgba(108,117,125,0.35);
+}
+[data-bs-theme="dark"] footer {
+  background: #1e2429;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+[data-bs-theme="dark"] .pagination .page-link {
+  background: #1e2429;
+  border-color: rgba(255,255,255,0.1);
+  color: #e4e8eb;
+}
+[data-bs-theme="dark"] .pagination .page-item.active .page-link {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+[data-bs-theme="dark"] .pagination .page-link:hover {
+  background: #262e34;
+}
+[data-bs-theme="dark"] input, [data-bs-theme="dark"] select, [data-bs-theme="dark"] textarea {
+  background-color: #1e2429;
+  border-color: rgba(255,255,255,0.12);
+  color: #e4e8eb;
+}
+[data-bs-theme="dark"] input:focus, [data-bs-theme="dark"] select:focus, [data-bs-theme="dark"] textarea:focus {
+  background-color: #232b31;
+}
+[data-bs-theme="dark"] .navbar-text { color: #cfd6dc !important; }

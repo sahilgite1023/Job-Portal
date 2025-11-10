@@ -1,0 +1,39 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Build outputs
+client/dist/
+client/.vite/
+**/build/
+**/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env
+.env
+**/.env
+.env.local
+**/.env.local
+
+# Uploads and temp
+backend/uploads/
+.tmp/
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+
+# Editor
+.vscode/
+.idea/
+
+# Others
+*.local
