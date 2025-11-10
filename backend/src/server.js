@@ -14,7 +14,18 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
+// Flexible CORS: supports comma-separated list in CORS_ORIGINS, or single CLIENT_ORIGIN.
+const rawOrigins = process.env.CORS_ORIGINS || process.env.CLIENT_ORIGIN || '';
+const allowedOrigins = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // non-browser requests
+    if (allowedOrigins.includes('*')) return cb(null, true);
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(morgan('dev'));
 
 // static for resumes
@@ -23,6 +34,7 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads/resumes', express.static(path.join(__dirname, '../uploads/resumes')));
 
 app.get('/', (req, res) => res.json({ message: 'Job Portal API' }));
+app.get('/api/health', (req, res) => res.status(200).json({ ok: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
