@@ -6,6 +6,7 @@ export default function ApplicantsRecruiter() {
   const { id } = useParams();
   const [apps, setApps] = useState([]);
   const [jobTitle, setJobTitle] = useState('');
+  const [workingId, setWorkingId] = useState(null);
 
   const load = async () => {
     try {
@@ -21,9 +22,19 @@ export default function ApplicantsRecruiter() {
 
   const updateStatus = async (applicationId, status) => {
     try {
-      await api.patch(`/applications/${applicationId}/status`, { status });
-      setApps(prev => prev.map(a => a._id === applicationId ? { ...a, status } : a));
-    } catch (e) { alert('Update failed'); }
+      setWorkingId(applicationId);
+      const { data } = await api.patch(`/applications/${applicationId}/status`, { status });
+      // Optimistic update; fallback to server response if present
+      const updated = data?.application?.status || status;
+      setApps(prev => prev.map(a => a._id === applicationId ? { ...a, status: updated } : a));
+      alert(`Status updated to "${updated}"`);
+    } catch (e) {
+      console.error('Status update failed:', e);
+      const msg = e?.response?.data?.message || 'Update failed';
+      alert(msg);
+    } finally {
+      setWorkingId(null);
+    }
   };
 
   return (
@@ -40,8 +51,20 @@ export default function ApplicantsRecruiter() {
               <td>{a.student?.resumeUrl ? <a href={a.student.resumeUrl} target="_blank" rel="noreferrer">Download</a> : 'None'}</td>
               <td>
                 <div className="btn-group btn-group-sm" role="group">
-                  <button className="btn btn-outline-success" disabled={a.status==='shortlisted'} onClick={() => updateStatus(a._id,'shortlisted')}>Shortlist</button>
-                  <button className="btn btn-outline-danger" disabled={a.status==='rejected'} onClick={() => updateStatus(a._id,'rejected')}>Reject</button>
+                  <button
+                    className="btn btn-outline-success"
+                    disabled={a.status==='shortlisted' || workingId===a._id}
+                    onClick={() => updateStatus(a._id,'shortlisted')}
+                  >
+                    {workingId===a._id ? 'Working…' : 'Shortlist'}
+                  </button>
+                  <button
+                    className="btn btn-outline-danger"
+                    disabled={a.status==='rejected' || workingId===a._id}
+                    onClick={() => updateStatus(a._id,'rejected')}
+                  >
+                    {workingId===a._id ? 'Working…' : 'Reject'}
+                  </button>
                 </div>
               </td>
             </tr>
