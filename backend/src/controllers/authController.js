@@ -41,11 +41,8 @@ export const me = asyncHandler(async (req, res) => {
 
 export const uploadResume = asyncHandler(async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'Resume file required (PDF)' });
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    { resumeUrl: `/${req.file.path.replace(/\\/g, '/')}` },
-    { new: true }
-  ).select('-password');
+
+  const resumeUrl = `/${req.file.path.replace(/\\/g, '/')}`;
 
   // === ATS Resume Scoring ===
   // 1) Load PDF text
@@ -55,8 +52,8 @@ export const uploadResume = asyncHandler(async (req, res) => {
     const parsed = await pdfParse(buffer);
     text = (parsed.text || '').toLowerCase();
   } catch (err) {
-    // If parsing fails, still respond with upload success
-    return res.json({ message: 'Resume uploaded', user, atsScore: 0, matchedKeywords: [], missingKeywords: [] });
+    // If parsing fails, proceed with score 0
+    text = '';
   }
 
   // 2) Build keyword set (job-specific if jobId provided, else common set)
@@ -69,11 +66,9 @@ export const uploadResume = asyncHandler(async (req, res) => {
   const extractJobKeywords = (job) => {
     if (!job) return [];
     const base = `${job.title || ''} ${job.company || ''} ${job.location || ''} ${job.type || ''} ${job.description || ''}`.toLowerCase();
-    // Simple tokenization, keep words with letters/digits and technologies
     const tokens = base.match(/[a-zA-Z+#.][a-zA-Z0-9.+#-]+/g) || [];
-    // Deduplicate and filter very short tokens
     const set = Array.from(new Set(tokens)).filter(t => t.length > 2);
-    return set.slice(0, 60); // cap size
+    return set.slice(0, 60);
   };
 
   let keywords = COMMON_KEYWORDS;
@@ -84,7 +79,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
       const job = await Job.findById(jobId).lean();
       const jobKeywords = extractJobKeywords(job);
       if (jobKeywords.length) { keywords = jobKeywords; keywordSource = 'job'; }
-    } catch { /* ignore, fallback to common */ }
+    } catch { /* ignore */ }
   }
 
   const matchedKeywords = [];
@@ -97,6 +92,13 @@ export const uploadResume = asyncHandler(async (req, res) => {
   const uniqueMatched = Array.from(new Set(matchedKeywords));
   const missingKeywords = keywords.filter(k => !uniqueMatched.includes(k.toLowerCase()));
   const atsScore = Math.round((uniqueMatched.length / total) * 100);
+
+  // Persist resumeUrl and atsScore on user
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { resumeUrl, atsScore },
+    { new: true }
+  ).select('-password');
 
   res.json({
     message: 'Resume uploaded',

@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['student', 'recruiter', 'admin'], required: true },
   resumeUrl: { type: String },
+  atsScore: { type: Number },
   company: { type: String }, // for recruiters (optional)
   provider: { type: String, enum: ['local','google'], default: 'local' },
   googleId: { type: String, index: true },

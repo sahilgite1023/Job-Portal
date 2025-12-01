@@ -41,7 +41,7 @@ export default function ApplicantsRecruiter() {
     <div>
       <h3>Applicants {jobTitle && `- ${jobTitle}`}</h3>
       <table className="table align-middle">
-        <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Resume</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Resume</th><th>ATS Score</th><th>Actions</th></tr></thead>
         <tbody>
           {apps.map(a => (
             <tr key={a._id}>
@@ -49,6 +49,7 @@ export default function ApplicantsRecruiter() {
               <td>{a.student?.email}</td>
               <td><span className={`badge bg-${a.status === 'applied' ? 'secondary' : a.status === 'shortlisted' ? 'success' : 'danger'}`}>{a.status}</span></td>
               <td>{a.student?.resumeUrl ? <a href={a.student.resumeUrl} target="_blank" rel="noreferrer">Download</a> : 'None'}</td>
+              <td>{typeof a.student?.atsScore === 'number' ? `${a.student.atsScore}%` : 'N/A'}</td>
               <td>
                 <div className="btn-group btn-group-sm" role="group">
                   <button

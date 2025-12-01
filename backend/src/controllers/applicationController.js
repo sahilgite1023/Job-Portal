@@ -21,7 +21,8 @@ export const getApplicantsForJob = asyncHandler(async (req, res) => {
   const job = await Job.findById(jobId);
   if (!job) return res.status(404).json({ message: 'Job not found' });
   if (String(job.createdBy) !== req.user.id) return res.status(403).json({ message: 'Forbidden' });
-  const apps = await Application.find({ job: jobId }).populate('student', '-password');
+  const apps = await Application.find({ job: jobId })
+    .populate('student', 'name email resumeUrl atsScore');
   res.json({ applications: apps });
 });
 
