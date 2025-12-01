@@ -1,20 +1,21 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
-import morgan from 'morgan';
+import cors from 'cors'; 
+import morgan from 'morgan'; // it show api request in console 
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-// Flexible CORS: supports comma-separated list in CORS_ORIGINS, or single CLIENT_ORIGIN.
+
 const rawOrigins = process.env.CORS_ORIGINS || process.env.CLIENT_ORIGIN || '';
 const allowedOrigins = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({
@@ -39,6 +40,7 @@ app.get('/api/health', (req, res) => res.status(200).json({ ok: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

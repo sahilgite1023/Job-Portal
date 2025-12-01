@@ -1,0 +1,243 @@
+Job Portal – Code Walkthrough (Simple English)
+
+Overview
+- This is a full‑stack MERN-style app: React (Vite) frontend + Node/Express backend + MongoDB.
+- Two roles today: student and recruiter. Role is enforced both on server and client.
+- Key flows: register/login, browse jobs, job detail, apply, upload resume (PDF), recruiter posts jobs and manages applicants.
+
+================================
+1) Backend (folder: backend/src)
+================================
+
+1.1 Entry point – server.js
+- Loads environment variables (dotenv).
+- Creates an Express app and parses JSON with express.json().
+- CORS: reads allowed origins from CORS_ORIGINS (comma-separated) or CLIENT_ORIGIN.
+  - If request origin matches the list (or list contains *), it is allowed.
+  - Credentials (cookies/authorization) are enabled.
+- Logs requests using morgan('dev').
+- Static resumes: serves files from /uploads/resumes so that /uploads/resumes/<file>.pdf can be downloaded.
+- Health endpoints:
+  - GET / -> { message: 'Job Portal API' }
+  - GET /api/health -> { ok: true }
+- Mounts main routers under /api:
+  - /api/auth (authentication + resume upload)
+  - /api/jobs (job listings + recruiter’s jobs)
+  - /api/applications (apply + recruiter manages applicants)
+- Error handling:
+  - notFound: catches unknown routes
+  - errorHandler: formats errors into JSON
+- Connects to MongoDB using connectDB(MONGODB_URI) and then starts the HTTP server on PORT.
+
+1.2 Database config – config/db.js
+- Exports connectDB(uri): connects to Mongo using mongoose.connect(uri).
+- Prints a console message on success; throws on failure (so deployment fails fast if DB URL is bad).
+
+1.3 Middleware
+- middleware/auth.js
+  - auth(): reads the Bearer token from Authorization header, verifies the JWT, loads the user, puts it on req.user.
+  - permit(...roles): checks that req.user.role is one of the allowed roles; otherwise returns 403.
+- middleware/errorHandler.js
+  - notFound: for any unknown route, returns 404 JSON.
+  - errorHandler: returns { message, stack? } and keeps consistent error responses.
+  - asyncHandler: helper to wrap async controllers and forward errors.
+- middleware/upload.js
+  - Uses Multer to accept only PDF files for resumes.
+  - Stores files on disk (uploads/resumes), generates safe filenames, and enforces file size limits.
+
+1.4 Models (MongoDB via Mongoose)
+- models/User.js
+  - Fields: name, email (unique), password (hashed with bcrypt in a pre-save hook), role ('student'|'recruiter'), resumeUrl, company (optional for recruiter), provider ('local'|'google'), googleId.
+  - Methods: matchPassword(candidate) compares a clear-text password to the stored hash.
+  - Pre-save: hashes password unless provider === 'google' or the password didn’t change.
+- models/Job.js
+  - Fields: title, company, location, type, salaryRange, description, createdBy (User _id), timestamps.
+  - Used to list jobs, show details, and let recruiters post jobs.
+- models/Application.js
+  - Fields: student (User _id), job (Job _id), status ('applied'|'shortlisted'|'rejected').
+  - Unique index on (student, job) so a student can’t apply twice to the same job.
+
+1.5 Controllers
+- controllers/authController.js
+  - register: validates input, hashes password, creates user, returns JWT + user.
+  - login: checks email + password; if valid, returns JWT + user object (role included).
+  - me: returns the current authed user (reads req.user from auth middleware).
+  - uploadResume: accepts a PDF via Multer, updates user.resumeUrl with the served path, returns new URL.
+- controllers/jobController.js
+  - createJob: recruiters post a job (validates fields), stores createdBy = req.user.id.
+  - getJobs: supports q, location, type, page, limit; returns { jobs, total, page, pages }.
+  - getJobById: returns one job.
+  - getMyJobs: for recruiters, returns jobs created by the logged-in recruiter.
+- controllers/applicationController.js
+  - applyToJob: students apply to a job; creates an Application linking student + job.
+  - getMyApplications: student’s own applications with statuses.
+  - getApplicantsForJob: recruiter gets all applicants for a specific job that recruiter posted.
+  - updateApplicationStatus: recruiter updates status (shortlisted/rejected) of a specific application.
+
+1.6 Routes
+- routes/authRoutes.js
+  - POST /api/auth/register
+  - POST /api/auth/login
+  - GET  /api/auth/me (JWT)
+  - POST /api/auth/resume (JWT student, multipart/form-data, PDF only)
+  - Uses express-validator for cleaner error messages and constraints.
+- routes/jobRoutes.js
+  - GET  /api/jobs (supports search, filters, pagination)
+  - GET  /api/jobs/:id
+  - GET  /api/jobs/me/listed (JWT recruiter)
+  - POST /api/jobs (JWT recruiter, validators)
+- routes/applicationRoutes.js
+  - POST /api/applications/:jobId/apply (JWT student)
+  - GET  /api/applications/my (JWT student)
+  - GET  /api/applications/job/:jobId/applicants (JWT recruiter who owns the job)
+  - PATCH /api/applications/:applicationId/status (JWT recruiter)
+
+1.7 Environment variables (.env in backend)
+- PORT: server port (e.g., 5000 locally; Render provides its own).
+- MONGODB_URI: your MongoDB Atlas connection string.
+- JWT_SECRET: long random string used to sign JWTs.
+- CLIENT_ORIGIN: single allowed origin (legacy) – OR – CORS_ORIGINS: comma-separated origins for CORS.
+- UPLOAD_DIR: folder where resumes are stored (e.g., uploads/resumes).
+
+1.8 Deployment notes (backend)
+- Render: set environment variables, use root directory = backend, start command = npm start.
+- Health: GET /api/health returns { ok: true } for monitoring.
+- Resumes: if you need durable storage, use a persistent disk or external storage (S3/Cloudinary).
+
+===============================
+2) Frontend (folder: client/src)
+===============================
+
+2.1 Entry – main.jsx
+- Wraps the app in React Router, AuthProvider (handles login state), and ThemeProvider (dark/light mode).
+- Imports global styles in styles.css and renders <App />.
+
+2.2 App.jsx
+- Defines all routes for pages.
+- Public routes: '/', '/login', '/register', '/jobs', '/jobs/:id'.
+- Student protected routes (via <ProtectedRoute role="student"/>): '/student/dashboard', '/student/applications', '/student/resume'.
+- Recruiter protected routes (via <ProtectedRoute role="recruiter"/>): '/recruiter/dashboard', '/recruiter/post-job', '/recruiter/jobs/:id/applicants'.
+- Renders a common Navbar and Footer around all pages.
+
+2.3 Contexts
+- context/AuthContext.jsx
+  - Persists JWT token in localStorage; exposes login, register, logout, and current user.
+  - Adds Authorization header on each request via axios interceptor (in api.js).
+- context/ThemeContext.jsx
+  - Manages dark/light theme; stores preference in localStorage; sets data-bs-theme on <html>.
+
+2.4 Services
+- services/api.js
+  - Axios instance for API calls.
+  - baseURL comes from VITE_API_URL (Netlify/production) or falls back to '/api' during local dev proxy.
+  - Attaches Bearer token if available.
+
+2.5 Components
+- components/Navbar.jsx
+  - Shows navigation links based on user role (student/recruiter).
+  - Includes a dark mode toggle button.
+- components/ProtectedRoute.jsx
+  - Guards a route by requiring auth and (optionally) a role.
+- components/StatCard.jsx
+  - Small KPI card used on dashboards.
+- components/Footer.jsx
+  - Footer with founders’ names and social links.
+
+2.6 Styling – styles.css
+- Global look and feel, hero section gradient, hover effect for cards.
+- Validation styles (valid/invalid borders).
+- Comprehensive dark theme overrides: hero, cards, table headers, navbar, badges, pagination, inputs, footer.
+
+2.7 Pages
+- pages/Home.jsx: Landing hero with quick value props + CTA buttons.
+- pages/Login.jsx: Login form with client-side validation.
+- pages/Register.jsx: Registration with validation (password rules; company for recruiters).
+- pages/Jobs.jsx: Job list with search (q), filters (location, type), and pagination (page, limit); cards link to details.
+- pages/JobDetail.jsx: Single job details + apply button (student only).
+- pages/DashboardStudent.jsx: Student stats + application list with status badges.
+- pages/ApplicationsStudent.jsx: Table of the student’s applications.
+- pages/ResumeUpload.jsx: Upload PDF resume with size/type checks; shows current resume URL if any.
+- pages/DashboardRecruiter.jsx: Recruiter overview with KPIs (total jobs, remote, internships) and job cards linking to applicants.
+- pages/ApplicantsRecruiter.jsx: Recruiter sees applicants for a job; can update status (shortlisted/rejected).
+- pages/PostJob.jsx: Form to post a job with validations (title, company, location, description).
+
+2.8 Vite and HTML
+- vite.config.js: In dev, proxies /api and /uploads to your backend server so the frontend can call them without CORS.
+- index.html: Includes Bootstrap 5 and Bootstrap Icons.
+
+2.9 Environment variables (frontend)
+- VITE_API_URL: when deployed (Netlify), set this to your backend, e.g. https://<render-app>.onrender.com/api
+
+2.10 Deployment notes (frontend)
+- Netlify: Base directory = client, Build = npm run build, Publish = client/dist.
+- Add SPA redirect (client/_redirects):
+  /* /index.html 200
+
+===========================
+3) How the main flows work
+===========================
+
+3.1 Login
+- Frontend posts email/password to POST /api/auth/login.
+- Backend verifies user + password with bcrypt; returns JWT + user data.
+- Frontend saves token in localStorage and axios sends it on future requests.
+
+3.2 Register
+- Frontend posts name/email/password/role (+company for recruiters) to POST /api/auth/register.
+- Backend creates user (hashes password), responds with JWT + user.
+
+3.3 Browse & search jobs
+- Frontend calls GET /api/jobs with q, location, type, page, limit.
+- Backend builds a Mongo filter and returns { jobs, total, page, pages }.
+
+3.4 Apply to a job
+- Frontend calls POST /api/applications/:jobId/apply (student JWT required).
+- Backend creates Application linking the student and job; compound unique index prevents duplicates.
+
+3.5 Recruiter posts a job
+- Frontend calls POST /api/jobs (recruiter JWT required) with validated fields.
+- Backend stores createdBy = recruiter’s id and returns the created job.
+
+3.6 Upload resume (PDF)
+- Frontend sends multipart/form-data to POST /api/auth/resume with field name 'resume'.
+- Multer stores file under uploads/resumes; backend updates user.resumeUrl with the public path.
+- File is served by Express static middleware at /uploads/resumes.
+
+=================================
+4) Environment & configuration list
+=================================
+Backend .env
+- PORT=5000
+- MONGODB_URI=<atlas-connection-string>
+- JWT_SECRET=<long-random-string>
+- CLIENT_ORIGIN=http://localhost:5173
+- (or) CORS_ORIGINS=https://your-site.netlify.app,http://localhost:5173
+- UPLOAD_DIR=uploads/resumes
+
+Frontend .env (optional for production build)
+- VITE_API_URL=https://your-backend.onrender.com/api
+
+=====================
+5) Where to change what
+=====================
+- Update password rules or field validations:
+  - Server: routes/*Routes.js (express-validator), controllers/*
+  - Client: pages/Login.jsx, Register.jsx, PostJob.jsx
+- Change role checks:
+  - Server: middleware/auth.js (permit)
+  - Client: components/ProtectedRoute.jsx + Navbar.jsx
+- Add new job fields:
+  - Server: models/Job.js (+ validators in routes/jobRoutes.js, controller logic)
+  - Client: pages/PostJob.jsx and Jobs.jsx cards
+- Adjust dark mode visuals:
+  - Client: styles.css and Navbar.jsx theme class
+
+=======================
+6) Quick troubleshooting
+=======================
+- 401 Unauthorized: token missing/expired; log in again.
+- 403 Forbidden: role mismatch (e.g., recruiter trying to access student-only route).
+- Resume not found after deploy: remember Render disks are ephemeral unless using a persistent disk or external storage.
+- CORS error: add your site URL to CORS_ORIGINS and redeploy backend.
+
+That’s it! This file gives a plain-English map of every important part so you can explain the project quickly and confidently.

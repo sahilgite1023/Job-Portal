@@ -35,6 +35,11 @@ export default function Navbar() {
                 <li className="nav-item"><NavLink className="nav-link" to="/recruiter/post-job">Post Job</NavLink></li>
               </>
             )}
+            {user?.role === 'admin' && (
+              <>
+                <li className="nav-item"><NavLink className="nav-link" to="/admin">Admin</NavLink></li>
+              </>
+            )}
           </ul>
           <ul className="navbar-nav ms-auto align-items-lg-center">
             <li className="nav-item me-2">

@@ -14,6 +14,7 @@ import ApplicantsRecruiter from './pages/ApplicantsRecruiter.jsx';
 import ResumeUpload from './pages/ResumeUpload.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Footer from './components/Footer.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/recruiter/dashboard" element={<ProtectedRoute role="recruiter"><DashboardRecruiter /></ProtectedRoute>} />
           <Route path="/recruiter/post-job" element={<ProtectedRoute role="recruiter"><PostJob /></ProtectedRoute>} />
           <Route path="/recruiter/jobs/:id/applicants" element={<ProtectedRoute role="recruiter"><ApplicantsRecruiter /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         </Routes>
       </div>
       <Footer />
