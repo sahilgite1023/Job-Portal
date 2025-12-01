@@ -35,22 +35,17 @@ console.log('Middlewares initialized. Registering routes...');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads/resumes', express.static(path.join(__dirname, '../uploads/resumes')));
-import { verifyEmailTransport } from './utils/emailService.js';
+// Email health removed; using internal notifications instead.
 
 app.get('/', (req, res) => res.json({ message: 'Job Portal API' }));
 app.get('/api/health', (req, res) => res.status(200).json({ ok: true }));
-app.get('/api/health/email', async (req, res) => {
-  try {
-    await verifyEmailTransport();
-    res.status(200).json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e?.message || 'SMTP not ready' });
-  }
-});
+// Email health endpoint removed.
+import notificationRoutes from './routes/notificationRoutes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use(notFound);

@@ -5,11 +5,15 @@ import StatCard from '../components/StatCard.jsx';
 export default function DashboardStudent() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     api.get('/applications/my')
       .then(res => setApps(res.data.applications))
       .finally(() => setLoading(false));
+    api.get('/notifications/my')
+      .then(res => setNotifications(res.data.notifications || []))
+      .catch(() => {});
   }, []);
 
   const stats = useMemo(() => {
@@ -50,6 +54,25 @@ export default function DashboardStudent() {
                   <span className={`badge bg-${a.status === 'applied' ? 'secondary' : a.status === 'shortlisted' ? 'success' : 'danger'} mt-1`}>{a.status}</span>
                 </div>
               </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card border-0 shadow-sm mt-4">
+        <div className="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong>Notifications</strong>
+          <span className="text-muted small">{notifications.length} items</span>
+        </div>
+        <div className="list-group list-group-flush">
+          {notifications.length === 0 && <div className="p-3 text-muted">No notifications yet.</div>}
+          {notifications.map(n => (
+            <div key={n._id} className="list-group-item d-flex justify-content-between align-items-start">
+              <div>
+                <div>{n.message}</div>
+                <div className="small text-muted">{new Date(n.createdAt).toLocaleString()}</div>
+              </div>
+              <span className={`badge ${n.isRead ? 'text-bg-secondary' : 'text-bg-primary'}`}>{n.isRead ? 'Read' : 'New'}</span>
             </div>
           ))}
         </div>

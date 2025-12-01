@@ -1,7 +1,7 @@
 import { asyncHandler } from '../middleware/errorHandler.js';
 import Application from '../models/Application.js';
 import Job from '../models/Job.js';
-import { sendEmail } from '../utils/emailService.js';
+import Notification from '../models/Notification.js';
 
 export const applyToJob = asyncHandler(async (req, res) => {
   const jobId = req.params.jobId;
@@ -33,30 +33,17 @@ export const updateApplicationStatus = asyncHandler(async (req, res) => {
   app.status = status;
   await app.save();
 
-  // If shortlisted, notify the candidate by email (gracefully handle errors)
+  // If shortlisted, create an internal notification for the candidate
   if (status === 'shortlisted') {
     try {
       const populated = await Application.findById(app._id)
         .populate('student', 'name email')
         .populate('job', 'title company');
-      const candidateName = populated.student?.name || 'Candidate';
-      const candidateEmail = populated.student?.email;
       const jobTitle = populated.job?.title || 'the position';
-      const companyName = populated.job?.company || 'the company';
-
-      if (candidateEmail) {
-        const subject = `Shortlisted for ${jobTitle} at ${companyName}`;
-        const text = `Dear ${candidateName},\n\nWe are pleased to inform you that you have been shortlisted for the position of ${jobTitle}.\n\nAfter reviewing your profile and resume, our hiring panel believes that you are a strong match for this opportunity.\nYou will receive further details regarding the next interview steps shortly.\n\nCongratulations once again, and we wish you success ahead.\n\nWarm regards,\nRecruitment Team\n${companyName}`;
-        const html = `<p>Dear ${candidateName},</p>
-<p>We are pleased to inform you that you have been shortlisted for the position of <strong>${jobTitle}</strong>.</p>
-<p>After reviewing your profile and resume, our hiring panel believes that you are a strong match for this opportunity.<br/>You will receive further details regarding the next interview steps shortly.</p>
-<p>Congratulations once again, and we wish you success ahead.</p>
-<p>Warm regards,<br/>Recruitment Team<br/>${companyName}</p>`;
-        await sendEmail({ to: candidateEmail, subject, text, html });
-      }
-    } catch (mailErr) {
-      // Log and continue without failing the status update
-      console.error('Email sending failed:', mailErr?.message || mailErr);
+      const message = `Congratulations! You have been shortlisted for the position of ${jobTitle}.`;
+      await Notification.create({ user: populated.student._id, message });
+    } catch (err) {
+      console.error('Notification creation failed:', err?.message || err);
     }
   }
   res.json({ application: app });
